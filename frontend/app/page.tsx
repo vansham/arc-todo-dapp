@@ -7,8 +7,18 @@ import { CheckCircle2, Circle, Trash2, Plus, Wallet, LogOut, Loader2, ExternalLi
 
 type Priority = 0 | 1 | 2
 interface Task { id: bigint; title: string; description: string; completed: boolean; createdAt: bigint; priority: number }
+interface Stats { 0: bigint; 1: bigint; 2: bigint }
 const PRIORITY_LABELS = ['LOW', 'MEDIUM', 'HIGH']
 function truncateAddress(addr: string) { return `${addr.slice(0, 6)}...${addr.slice(-4)}` }
+
+const CONTRACT = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`
+const ABI = [
+  { inputs: [{ name: '_title', type: 'string' }, { name: '_description', type: 'string' }, { name: '_priority', type: 'uint8' }], name: 'createTask', outputs: [{ name: '', type: 'uint256' }], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [{ name: '_taskId', type: 'uint256' }], name: 'completeTask', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [{ name: '_taskId', type: 'uint256' }], name: 'deleteTask', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [], name: 'getMyTasks', outputs: [{ components: [{ name: 'id', type: 'uint256' }, { name: 'title', type: 'string' }, { name: 'description', type: 'string' }, { name: 'completed', type: 'bool' }, { name: 'createdAt', type: 'uint256' }, { name: 'priority', type: 'uint8' }], name: '', type: 'tuple[]' }], stateMutability: 'view', type: 'function' },
+  { inputs: [], name: 'getStats', outputs: [{ name: 'total', type: 'uint256' }, { name: 'completed', type: 'uint256' }, { name: 'pending', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+] as const
 
 export default function Home() {
   const { address, isConnected } = useAccount()
@@ -22,20 +32,12 @@ export default function Home() {
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all')
 
-  const CONTRACT = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`
-  const ABI = [
-    { inputs: [{ name: '_title', type: 'string' }, { name: '_description', type: 'string' }, { name: '_priority', type: 'uint8' }], name: 'createTask', outputs: [{ name: '', type: 'uint256' }], stateMutability: 'nonpayable', type: 'function' },
-    { inputs: [{ name: '_taskId', type: 'uint256' }], name: 'completeTask', outputs: [], stateMutability: 'nonpayable', type: 'function' },
-    { inputs: [{ name: '_taskId', type: 'uint256' }], name: 'deleteTask', outputs: [], stateMutability: 'nonpayable', type: 'function' },
-    { inputs: [], name: 'getMyTasks', outputs: [{ components: [{ name: 'id', type: 'uint256' }, { name: 'title', type: 'string' }, { name: 'description', type: 'string' }, { name: 'completed', type: 'bool' }, { name: 'createdAt', type: 'uint256' }, { name: 'priority', type: 'uint8' }], name: '', type: 'tuple[]' }], stateMutability: 'view', type: 'function' },
-    { inputs: [], name: 'getStats', outputs: [{ name: 'total', type: 'uint256' }, { name: 'completed', type: 'uint256' }, { name: 'pending', type: 'uint256' }], stateMutability: 'view', type: 'function' },
-  ] as const
-
   const { data: tasks, refetch } = useReadContract({ address: CONTRACT, abi: ABI, functionName: 'getMyTasks', account: address, query: { enabled: isConnected } })
   const { data: stats } = useReadContract({ address: CONTRACT, abi: ABI, functionName: 'getStats', account: address, query: { enabled: isConnected } })
   const isLoading = isPending || isTxLoading
+  const statsData = stats as Stats | undefined
 
-  const handleCreate = useCallback(async () => {
+  const handleCreate = useCallback(() => {
     if (!title.trim()) return
     writeContract({ address: CONTRACT, abi: ABI, functionName: 'createTask', args: [title.trim(), description.trim(), priority] })
     setTitle(''); setDescription(''); setPriority(1); setShowForm(false)
@@ -103,9 +105,9 @@ export default function Home() {
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
               {[
-                { label: 'Total', value: stats ? Number((stats as any)[0]) : 0, color: '#9D6FF0' },
-                { label: 'Completed', value: stats ? Number((stats as any)[1]) : 0, color: '#34D399' },
-                { label: 'Pending', value: stats ? Number((stats as any)[2]) : 0, color: '#FBBF24' },
+                { label: 'Total', value: statsData ? Number(statsData[0]) : 0, color: '#9D6FF0' },
+                { label: 'Completed', value: statsData ? Number(statsData[1]) : 0, color: '#34D399' },
+                { label: 'Pending', value: statsData ? Number(statsData[2]) : 0, color: '#FBBF24' },
               ].map(s => (
                 <div key={s.label} style={{ background: 'rgba(17,13,30,0.8)', border: '1px solid rgba(123,63,228,0.2)', borderRadius: 16, padding: '20px 24px' }}>
                   <p style={{ fontSize: 12, color: s.color, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>{s.label}</p>
