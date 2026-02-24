@@ -69,7 +69,7 @@ export default function Home() {
             <ListTodo size={16} color="white" />
           </div>
           <span style={{ fontWeight: 800, fontSize: 18 }}>Arc<span style={{ color: '#9D6FF0' }}>Task</span></span>
-          <span style={{ fontSize: 10, color: '#8B7AAF', background: 'rgba(123,63,228,0.1)', border: '1px solid rgba(123,63,228,0.2)', padding: '2px 8px', borderRadius: 4 }}>TESTNET</span>
+          <a href="/marketplace" style={{ fontSize: 13, color: '#9D6FF0', textDecoration: 'none', background: 'rgba(123,63,228,0.1)', padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(123,63,228,0.3)', fontWeight: 600 }}>🏪 Marketplace</a><span style={{ fontSize: 10, color: '#8B7AAF', background: 'rgba(123,63,228,0.1)', border: '1px solid rgba(123,63,228,0.2)', padding: '2px 8px', borderRadius: 4 }}>TESTNET</span>
         </div>
         {isConnected ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
